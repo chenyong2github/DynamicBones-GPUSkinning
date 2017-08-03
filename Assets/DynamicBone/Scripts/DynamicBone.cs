@@ -52,8 +52,12 @@ public class DynamicBone : MonoBehaviour
     float m_Weight = 1.0f;
     bool m_DistantDisabled = false;
 
-    class Particle
+    public bool m_GPUSkinning = false;
+    GPUSkinning gpuSkinning = null;
+
+    public class Particle
     {
+        public string m_Name = "";
         public Transform m_Transform = null;
         public int m_ParentIndex = -1;
         public float m_Damping = 0;
@@ -70,11 +74,17 @@ public class DynamicBone : MonoBehaviour
         public Quaternion m_InitLocalRotation = Quaternion.identity;
     }
 
-    List<Particle> m_Particles = new List<Particle>();
+    public List<Particle> m_Particles = new List<Particle>();
 
     void Start()
     {
         SetupParticles();
+
+        if (m_GPUSkinning)
+        {
+            gpuSkinning = gameObject.AddComponent<GPUSkinning>();
+            gpuSkinning.root = m_Root;
+        }
     }
 
     void FixedUpdate()
@@ -91,6 +101,7 @@ public class DynamicBone : MonoBehaviour
 
     void LateUpdate()
     {
+        
         if (m_DistantDisable)
             CheckDistance();
 
@@ -102,6 +113,13 @@ public class DynamicBone : MonoBehaviour
             float dt = Time.deltaTime;
 #endif
             UpdateDynamicBones(dt);
+        }
+
+    
+        if (m_GPUSkinning)
+        {
+            gpuSkinning.UpdateBones(m_Particles);
+            gpuSkinning.Play();
         }
     }
 
@@ -293,6 +311,7 @@ public class DynamicBone : MonoBehaviour
         p.m_ParentIndex = parentIndex;
         if (b != null)
         {
+            p.m_Name = b.gameObject.name;
             p.m_Position = p.m_PrevPosition = b.position;
             p.m_InitLocalPosition = b.localPosition;
             p.m_InitLocalRotation = b.localRotation;
